@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>出願書類の添削室（Gemini版）</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@400;500;700&family=Zen+Old+Mincho:wght@400;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+%%CSS%%
+[hidden]{display:none!important}
+.steps{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px;counter-reset:st}
+.steps li{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start;font-size:14px}
+.steps li::before{counter-increment:st;content:counter(st);width:26px;height:26px;border-radius:50%;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-family:var(--mono);font-size:13px}
+.steps small{display:block;color:var(--ink-3);font-size:12.5px}
+.bigbtns{display:flex;flex-wrap:wrap;gap:10px}
+.preview{font-family:var(--mono);font-size:12px;line-height:1.6;white-space:pre-wrap;background:var(--ground);border:1px solid var(--line);border-radius:8px;padding:12px;max-height:360px;overflow:auto;color:var(--ink-2)}
+.callout{border-left:3px solid var(--red);background:var(--red-soft);padding:10px 12px;border-radius:0 8px 8px 0;font-size:13.5px}
+.gemrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.ok{color:var(--g-a);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <h1>出願書類の<span class="pen">添削</span>室 <span style="font-size:15px;color:var(--ink-3);font-weight:400">Gemini版</span></h1>
+      <p class="sub">志望理由書・活動報告書・推薦書の添削の依頼文を作り、学校のGeminiに貼って添削してもらうページです。このページは何も送信しません。</p>
+    </div>
+  </header>
+
+  <div class="grid">
+    <section class="panel" aria-labelledby="in-h">
+      <div class="panel-h"><h2 id="in-h">原稿</h2><button class="btn sm" id="clearBtn" type="button">新しい原稿</button></div>
+      <div class="panel-b">
+        <div class="seg" role="group" aria-label="書類の種類" id="typeSeg">
+          <button type="button" data-t="shibou" aria-pressed="true">志望理由書</button>
+          <button type="button" data-t="katsudo" aria-pressed="false">活動報告書</button>
+          <button type="button" data-t="suisen" aria-pressed="false">推薦書</button>
+        </div>
+
+        <div class="row2">
+          <label class="f">大学 <small id="uniHint">名前の一部を入れると候補が出ます</small>
+            <input type="text" id="uni" list="uniList" autocomplete="off" placeholder="例）横浜国立">
+            <datalist id="uniList"></datalist>
+          </label>
+          <label class="f">学部
+            <select id="fac" disabled><option value="">大学を先に選ぶ</option></select>
+          </label>
+        </div>
+
+        <div class="apbox" id="apBox" hidden>
+          <div class="aph"><span>アドミッション・ポリシーの要点</span><span class="apmeta" id="apMeta"></span></div>
+          <div class="aptext" id="apText"></div>
+        </div>
+
+        <div id="manualWrap" hidden class="manual">
+          <p class="mask-note" style="margin:0 0 8px">リストにない大学・学部です。志望先とアドミッション・ポリシーを入力してください（ポリシーは空でも添削できます）。</p>
+          <label class="f">志望先（大学・学部・学科）<input type="text" id="target" placeholder="例）△△大学 教育学部 初等教育専攻"></label>
+          <label class="f" style="margin-top:10px">アドミッション・ポリシー <small>大学のサイトや募集要項から貼る</small>
+            <textarea id="ap" rows="3"></textarea>
+          </label>
+        </div>
+        <button type="button" class="linkbtn" id="manualBtn">リストにない大学・学部を手で入れる</button>
+
+        <div class="mask">
+          <label class="f">伏せる名前 <small>生徒の氏名など。読点で区切ると複数伏せられます（例: 山田 花子、佐藤先生）</small>
+            <input type="text" id="names" autocomplete="off" placeholder="例）山田 花子">
+          </label>
+          <p class="mask-note" id="maskNote">名前を入れると、本文中の該当箇所を〇〇にしてから依頼文に入れます。</p>
+          <p class="mask-note">名前はどこにも保存・送信しません。</p>
+        </div>
+
+        <label class="f"><span id="bodyLabel">本文</span>
+          <textarea id="body" class="body"></textarea>
+        </label>
+        <div class="count"><span id="countNow">0字</span><span id="limitNote"></span></div>
+
+        <details class="more" id="more">
+          <summary>入試方式・字数・補足・前回の原稿（任意）</summary>
+          <div class="inner">
+            <div class="row2">
+              <label class="f">入試方式
+                <select id="method">
+                  <option>総合型選抜</option>
+                  <option>学校推薦型選抜（指定校）</option>
+                  <option>学校推薦型選抜（公募制）</option>
+                  <option>その他</option>
+                </select>
+              </label>
+              <label class="f">字数の目安（字以内）<input type="number" id="limit" min="0" step="50" placeholder="例）800"></label>
+            </div>
+            <label class="f">補足 <small>重視してほしい点、生徒の状況など</small>
+              <textarea id="notes" rows="2" placeholder="例）字数は厳守。3回目の下書きなので構成は大きく変えずに"></textarea>
+            </label>
+            <label class="f">前回の原稿 <small>貼ると、前回からよくなった点・残る課題も書いてもらえます（名前は伏せます）</small>
+              <textarea id="prev" rows="3"></textarea>
+            </label>
+            <label class="f" id="refWrap" hidden>参考：本人の志望理由書 <small>推薦書と食い違いがないかを見ます（名前は伏せます）</small>
+              <textarea id="ref" rows="4"></textarea>
+            </label>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <section class="panel" aria-labelledby="out-h">
+      <div class="panel-h"><h2 id="out-h">Geminiで添削する</h2></div>
+      <div class="panel-b">
+        <ol class="steps">
+          <li><div>左で書類の種類・大学・学部を選び、伏せる名前と本文を入れる</div></li>
+          <li><div>下の「依頼文をコピーしてGeminiを開く」を押す<small>依頼文がコピーされ、Geminiが新しいタブで開きます</small></div></li>
+          <li><div>Geminiの入力欄に貼り付けて送る（Ctrl+V / ⌘V）<small>学校のアカウントでログインしているか確かめてください</small></div></li>
+        </ol>
+        <div class="bigbtns">
+          <button class="btn primary" id="goBtn" type="button">依頼文をコピーしてGeminiを開く</button>
+          <button class="btn" id="copyBtn" type="button">コピーだけ</button>
+        </div>
+        <span class="status" id="status" role="status"></span>
+
+        <div class="callout">貼る前に、依頼文の中に生徒の名前が残っていないか、下のプレビューでひと目確かめてください。名前の書き方が違う（ふりがな・旧字・あだ名など）と伏せられません。</div>
+
+        <details class="more">
+          <summary>依頼文のプレビュー</summary>
+          <div class="preview" id="preview"></div>
+        </details>
+
+        <details class="more" id="gemBox">
+          <summary>毎回の貼り付けを短くする（Gemを使う）</summary>
+          <div class="inner">
+            <p class="note" style="margin:0">Geminiの「Gem」に添削のルールを一度登録しておくと、毎回は原稿の情報だけ貼れば済みます。</p>
+            <ol class="steps">
+              <li><div>Geminiの左のメニュー「Gem マネージャー」→「新しい Gem」を開く</div></li>
+              <li><div>名前を「出願書類の添削」などにし、「カスタム指示」に下のボタンでコピーした指示文を貼って保存</div></li>
+              <li><div>以後はそのGemを開き、「原稿の情報だけコピー」した内容を貼って送る</div></li>
+            </ol>
+            <div class="gemrow">
+              <button class="btn" id="gemRuleBtn" type="button">Gemの指示文をコピー</button>
+              <button class="btn" id="gemDataBtn" type="button">原稿の情報だけコピー</button>
+            </div>
+            <p class="mask-note" style="margin:0">観点は書類の種類ごとに違うので、Gemの指示文には3種類すべての観点が入っています。</p>
+          </div>
+        </details>
+      </div>
+    </section>
+  </div>
+
+  <p class="sub" style="margin-top:24px">アドミッション・ポリシーは各大学の公式ページを読んで要点をまとめたものです（2026年9月時点）。正確な文言は「原文（大学のページ）」で確かめてください。</p>
+</div>
+
+<script>
+(() => {
+const $ = (id) => document.getElementById(id);
+%%TYPES%%
+const GEMINI_URL = "https://gemini.google.com/app";
+let type = "shibou";
+
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const countChars = (s) => (s || "").replace(/[\r\n]/g, "").length;
+
+function nameTokens(raw) {
+  const parts = (raw || "").split(/[、,，\n]+/).map((s) => s.trim()).filter(Boolean);
+  const set = new Set();
+  for (const p of parts) {
+    const pieces = p.split(/[\s　]+/).filter(Boolean);
+    set.add(p);
+    if (pieces.length > 1) { set.add(pieces.join("")); set.add(pieces.join("　")); set.add(pieces.join(" ")); }
+    for (const x of pieces) if (x.length >= 2) set.add(x);
+  }
+  return [...set].filter((t) => t.length >= 2).sort((a, b) => b.length - a.length);
+}
+function mask(text, tokens) {
+  let n = 0, out = text || "";
+  for (const t of tokens) { const parts = out.split(t); if (parts.length > 1) { n += parts.length - 1; out = parts.join("〇〇"); } }
+  return { text: out, n };
+}
+
+// ---------- 種類 ----------
+function setType(t) {
+  type = t;
+  for (const b of $("typeSeg").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.t === t));
+  $("bodyLabel").textContent = TYPES[t].bodyLabel;
+  $("refWrap").hidden = t !== "suisen";
+  $("body").placeholder = t === "suisen" ? "推薦書の本文を貼り付けてください。" : "生徒の下書きを貼り付けてください。";
+  refresh();
+}
+$("typeSeg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setType(b.dataset.t); });
+
+// ---------- 大学・学部・AP ----------
+let AP = null, uniIdx = new Map(), manual = false;
+async function loadAP() {
+  try {
+    const r = await fetch("ap.json"); if (!r.ok) throw 0;
+    AP = await r.json();
+    uniIdx = new Map(AP.u.map((u) => [u.n, u]));
+    const order = { "国立": 0, "公立": 1, "私立": 2 };
+    const list = [...AP.u].sort((a, b) => (order[a.k] - order[b.k]) || a.n.localeCompare(b.n, "ja"));
+    $("uniList").innerHTML = list.map((u) => `<option value="${esc(u.n)}">${esc(u.k)}・${esc(u.p)}</option>`).join("");
+    $("uniHint").textContent = `${AP.u.length}校から。名前の一部で候補が出ます`;
+  } catch { $("uniHint").textContent = "大学の一覧を読み込めませんでした。手で入れてください"; setManual(true); }
+}
+function setManual(on) {
+  manual = on;
+  $("manualWrap").hidden = !on;
+  $("manualBtn").textContent = on ? "一覧から選ぶ" : "リストにない大学・学部を手で入れる";
+  $("uni").disabled = on; $("fac").disabled = on || !uniIdx.has($("uni").value.trim());
+  showAP();
+}
+function currentFac() { const u = uniIdx.get($("uni").value.trim()); return u ? u.f[Number($("fac").value)] || null : null; }
+function fillFac() {
+  const u = uniIdx.get($("uni").value.trim());
+  if (!u) { $("fac").innerHTML = `<option value="">大学を先に選ぶ</option>`; $("fac").disabled = true; showAP(); return; }
+  $("fac").disabled = manual;
+  $("fac").innerHTML = (u.f.length > 1 ? `<option value="">学部を選ぶ</option>` : "") + u.f.map((f, i) => `<option value="${i}">${esc(f.n)}</option>`).join("");
+  showAP();
+}
+function showAP() {
+  const f = manual ? null : currentFac();
+  $("apBox").hidden = !f;
+  if (f) {
+    const lvl = f.l === "代用" ? "学科ごとに方針が分かれる学部のため目安（学科の方針は原文で） ・ " : f.l && f.l !== "学部" ? `${f.l}の方針 ・ ` : "";
+    $("apMeta").innerHTML = `${esc(lvl)}${esc(f.y && f.y !== "不明" ? f.y : "")}${f.s ? ` ・ <a href="${esc(f.s)}" target="_blank" rel="noopener">原文（大学のページ）</a>` : ""}`;
+    $("apText").textContent = f.a;
+  }
+  refresh();
+}
+function getTarget() {
+  if (manual) return $("target").value.trim();
+  const f = currentFac();
+  return f ? `${$("uni").value.trim()} ${f.n === "（大学全体）" ? "" : f.n}`.trim() : $("uni").value.trim();
+}
+function getAPText() { if (manual) return $("ap").value.trim(); const f = currentFac(); return f ? `（大学公式ページの要約）\n${f.a}` : ""; }
+$("uni").addEventListener("input", fillFac);
+$("uni").addEventListener("change", fillFac);
+$("fac").addEventListener("change", showAP);
+$("manualBtn").addEventListener("click", () => { if (!manual && !$("target").value) $("target").value = getTarget(); setManual(!manual); });
+
+// ---------- 依頼文 ----------
+const RULES = (aspectsText, rewriteRule, questionRule) => `# 守ること
+- 本文に書かれた事実を超えて、経験・実績・数値・固有名詞を作らない。足りない情報は、書き直し例の中で【 】の空欄として示す（例:【参加人数】【研究室名】）。
+- アドミッション・ポリシーが示されていれば、観点の中で必ずそれとの対応に触れる。示されていなければ、学部の一般的な特色からの見立てであることを断る。
+- 「充実した環境」「幅広い視野」「真面目で明るい」のような、どの大学・どの生徒にも言える常套句は指摘する。
+- 書き直し例は字数の目安に収める（指定がなければ原文と同程度）。${rewriteRule}
+- 生徒への質問は、書き足すための材料を引き出す問いにする（はい・いいえで終わらない）。${questionRule}4〜6個。
+- 「〇〇」は伏せ字なのでそのまま使う。生徒の名前を推測しない。
+
+# 観点と評価
+${aspectsText}
+評価の目安: A=このまま出せる水準 / B=小さな手直しで良くなる / C=中身の書き足しが必要 / D=大きく組み直す必要がある
+
+# 答える形（この見出しと順番で）
+## 総合評価
+A〜D の1文字と、2〜4文の総評。
+## 前回からの変化
+前回の原稿が示されたときだけ、よくなった点と残る課題を2〜3文で。示されていなければこの見出しごと省く。
+## 観点別の評価
+「観点｜評価｜コメント」の表。
+## 赤ペン
+本文の前から順に6〜12か所。各項目は次の形:
+1. 「本文からそのまま引用（8〜40字）」［内容／構成／表現／誤字／事実確認］
+   指摘：…
+   直し方の例：…（不要なら省く）
+## 書き直し例
+全文。段落は改行で分ける。最後に（何をどう変えたか）を1〜2文。
+## 生徒への質問
+番号つきで。各問いのあとに（何を引き出す問いか）を短く。`;
+
+const aspectsOf = (t) => TYPES[t].aspects.map((a, i) => `${i + 1}. ${a[0]} — ${a[1]}`).join("\n");
+const questionRuleOf = (t) => t === "suisen" ? "推薦書の場合は、推薦者が生徒本人・部活動顧問・担任などに確かめるとよい問いにする。" : "生徒に面談で聞く言葉づかいで書く。";
+
+function collect() {
+  const toks = nameTokens($("names").value);
+  const body = mask($("body").value.trim(), toks), ref = mask($("ref").value.trim(), toks), prev = mask($("prev").value.trim(), toks);
+  return { toks, body, ref, prev, target: getTarget(), ap: getAPText(), method: $("method").value, limit: Number($("limit").value) || 0, notes: $("notes").value.trim() };
+}
+function dataBlock(c) {
+  const T = TYPES[type];
+  return `# 書類の情報
+- 種類: ${T.label}
+- 志望先: ${c.target || "（未記入）"}
+- 入試方式: ${c.method}
+- 字数の目安: ${c.limit ? c.limit + "字以内" : "指定なし"}（現在 ${countChars(c.body.text)}字、改行を除く）
+- 大学の求める人物像（アドミッション・ポリシー）:
+${c.ap || "（未記入）"}
+- 先生からの補足: ${c.notes || "（なし）"}
+${type === "suisen" && c.ref.text ? `\n# 参考：本人の志望理由書\n<<<\n${c.ref.text}\n>>>\n` : ""}${c.prev.text ? `\n# 前回の原稿\n<<<\n${c.prev.text}\n>>>\n` : ""}
+# 本文（生徒名は「〇〇」に伏せてあります）
+<<<
+${c.body.text}
+>>>`;
+}
+function fullPrompt(c) {
+  const T = TYPES[type];
+  return `あなたは高校で長年、大学入試の出願書類（総合型選抜・学校推薦型選抜）を指導してきた進路指導の教員です。以下の${T.label}を添削してください。読み手は添削を依頼した高校教員で、結果をもとに${type === "suisen" ? "自分の書いた推薦書を直します" : "生徒への返し方を決めます"}。
+
+${dataBlock(c)}
+
+${RULES(aspectsOf(type), T.rewriteRule, questionRuleOf(type))}`;
+}
+function gemRules() {
+  const aspectsAll = Object.entries(TYPES).map(([k, T]) => `【${T.label}】\n${aspectsOf(k)}`).join("\n\n");
+  const rw = Object.values(TYPES).map((T) => `${T.label}: ${T.rewriteRule}`).join(" ");
+  return `あなたは高校で長年、大学入試の出願書類（総合型選抜・学校推薦型選抜）を指導してきた進路指導の教員です。これから高校教員が、志望理由書・活動報告書・推薦書のどれかを「書類の情報」と「本文」の形で貼ります。書類の種類に合った観点で添削してください。読み手は依頼した高校教員です。
+
+${RULES(`書類の種類ごとに、次の観点をこの順で A〜D で評価する。\n\n${aspectsAll}`, `文体の決まり: ${rw}`, "推薦書の場合は推薦者が生徒本人・部活動顧問・担任などに確かめるとよい問いに、それ以外は生徒に面談で聞く言葉づかいにする。")}`;
+}
+
+function refresh() {
+  const c = collect();
+  const n = countChars($("body").value), lim = c.limit;
+  $("countNow").innerHTML = lim && n > lim ? `<span class="over">${n}字（${n - lim}字超過）</span>` : `${n}字`;
+  $("limitNote").textContent = lim ? `目安 ${lim}字以内` : "";
+  if (!c.toks.length) $("maskNote").textContent = "名前を入れると、本文中の該当箇所を〇〇にしてから依頼文に入れます。";
+  else {
+    const a = c.body.n + c.ref.n + c.prev.n;
+    $("maskNote").innerHTML = a ? `本文中の <b>${a}か所</b> を〇〇に伏せます。` : "本文中にこの名前は見つかりません。書き方の違いがないか確かめてください。";
+  }
+  $("preview").textContent = c.body.text ? fullPrompt(c) : "（本文を入れると、ここに依頼文が出ます）";
+}
+for (const id of ["body", "limit", "names", "ref", "prev", "notes", "target", "ap", "method"]) $(id).addEventListener("input", refresh);
+
+function say(msg, err) { $("status").textContent = msg || ""; $("status").className = "status" + (err ? " err" : " ok"); }
+async function copyText(text) {
+  try { await navigator.clipboard.writeText(text); return true; }
+  catch {
+    const ta = document.createElement("textarea"); ta.value = text; document.body.appendChild(ta); ta.select();
+    let ok = false; try { ok = document.execCommand("copy"); } catch {}
+    ta.remove(); return ok;
+  }
+}
+function ready() {
+  if (!$("body").value.trim()) { say("本文を貼り付けてください。", true); $("body").focus(); return null; }
+  if (!manual && uniIdx.has($("uni").value.trim()) && !currentFac()) { say("学部を選んでください。", true); $("fac").focus(); return null; }
+  return collect();
+}
+$("goBtn").addEventListener("click", async () => {
+  const c = ready(); if (!c) return;
+  const copying = copyText(fullPrompt(c)); // クリックの直後にコピーを始める
+  window.open(GEMINI_URL, "_blank", "noopener");
+  const ok = await copying;
+  say(ok ? "コピーしました。開いたGeminiに貼り付けて送ってください。" : "コピーできませんでした。プレビューの文を選んでコピーしてください。", !ok);
+});
+$("copyBtn").addEventListener("click", async () => {
+  const c = ready(); if (!c) return;
+  const ok = await copyText(fullPrompt(c));
+  say(ok ? "依頼文をコピーしました。" : "コピーできませんでした。プレビューの文を選んでコピーしてください。", !ok);
+});
+$("gemRuleBtn").addEventListener("click", async () => { const ok = await copyText(gemRules()); say(ok ? "Gemの指示文をコピーしました。Gemの「カスタム指示」に貼ってください。" : "コピーできませんでした。", !ok); });
+$("gemDataBtn").addEventListener("click", async () => {
+  const c = ready(); if (!c) return;
+  const ok = await copyText(dataBlock(c));
+  say(ok ? "原稿の情報をコピーしました。登録したGemに貼って送ってください。" : "コピーできませんでした。", !ok);
+});
+
+$("clearBtn").addEventListener("click", () => {
+  for (const id of ["uni", "target", "ap", "names", "body", "limit", "notes", "ref", "prev"]) $(id).value = "";
+  $("method").selectedIndex = 0;
+  if (manual && AP) setManual(false);
+  fillFac(); say(""); $("body").focus();
+});
+
+setType("shibou");
+loadAP();
+})();
+</script>
+</body>
+</html>
