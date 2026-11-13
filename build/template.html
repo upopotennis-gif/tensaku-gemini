@@ -26,7 +26,7 @@
   <header class="top">
     <div>
       <h1>出願書類の<span class="pen">添削</span>室 <span style="font-size:15px;color:var(--ink-3);font-weight:400">Gemini版</span></h1>
-      <p class="sub">志望理由書・活動報告書・推薦書の添削の依頼文を作り、学校のGeminiに貼って添削してもらうページです。このページは何も送信しません。</p>
+      <p class="sub">志望理由書・活動報告書・推薦書・一般選抜の「主体性」記入欄の添削の依頼文を作り、学校のGeminiに貼って添削してもらうページです。このページは何も送信しません。</p>
     </div>
   </header>
 
@@ -38,6 +38,7 @@
           <button type="button" data-t="shibou" aria-pressed="true">志望理由書</button>
           <button type="button" data-t="katsudo" aria-pressed="false">活動報告書</button>
           <button type="button" data-t="suisen" aria-pressed="false">推薦書</button>
+          <button type="button" data-t="shutai" aria-pressed="false">主体性</button>
         </div>
 
         <div class="row2">
@@ -72,6 +73,10 @@
           <p class="mask-note">名前はどこにも保存・送信しません。</p>
         </div>
 
+        <label class="f" id="setsumonWrap" hidden>大学の設問 <small>出願サイトの指示文をそのまま貼る（空でも添削できます）</small>
+          <textarea id="setsumon" rows="3" placeholder="例）「主体性」「多様性」「協働性」に関するこれまでの経験を、100字以上500字以内で記入してください。"></textarea>
+        </label>
+
         <label class="f"><span id="bodyLabel">本文</span>
           <textarea id="body" class="body"></textarea>
         </label>
@@ -86,6 +91,8 @@
                   <option>総合型選抜</option>
                   <option>学校推薦型選抜（指定校）</option>
                   <option>学校推薦型選抜（公募制）</option>
+                  <option>一般選抜</option>
+                  <option>共通テスト利用</option>
                   <option>その他</option>
                 </select>
               </label>
@@ -182,7 +189,12 @@ function setType(t) {
   for (const b of $("typeSeg").querySelectorAll("button")) b.setAttribute("aria-pressed", String(b.dataset.t === t));
   $("bodyLabel").textContent = TYPES[t].bodyLabel;
   $("refWrap").hidden = t !== "suisen";
-  $("body").placeholder = t === "suisen" ? "推薦書の本文を貼り付けてください。" : "生徒の下書きを貼り付けてください。";
+  $("setsumonWrap").hidden = t !== "shutai";
+  const general = ["一般選抜", "共通テスト利用"].includes($("method").value);
+  if (t === "shutai" && !general) $("method").value = "一般選抜";
+  if (t !== "shutai" && general) $("method").selectedIndex = 0;
+  $("limit").placeholder = t === "shutai" ? "例）500" : "例）800";
+  $("body").placeholder = t === "suisen" ? "推薦書の本文を貼り付けてください。" : t === "shutai" ? "出願サイトに入力する文章の下書きを貼り付けてください。" : "生徒の下書きを貼り付けてください。";
   refresh();
 }
 $("typeSeg").addEventListener("click", (e) => { const b = e.target.closest("button"); if (b) setType(b.dataset.t); });
@@ -237,9 +249,15 @@ $("fac").addEventListener("change", showAP);
 $("manualBtn").addEventListener("click", () => { if (!manual && !$("target").value) $("target").value = getTarget(); setManual(!manual); });
 
 // ---------- 依頼文 ----------
-const RULES = (aspectsText, rewriteRule, questionRule) => `# 守ること
+const AP_RULE = "- アドミッション・ポリシーが示されていれば、観点の中で必ずそれとの対応に触れる。示されていなければ、学部の一般的な特色からの見立てであることを断る。";
+const SHUTAI_RULES = `- 何よりも設問への応答を優先して見る。設問が「主体性」「多様性」「協働性」のうち一部だけを求めているなら、求められていない要素がないことを減点しない。アドミッション・ポリシーは参考にとどめ、無理に結びつけさせない。
+- 役職・大会成績・資格を並べただけの文、「みんなで協力して」「コミュニケーションの大切さを学んだ」で終わる文は、本人の行動が見えないので必ず指摘する。
+- 字数が少ないので、経験は一つに絞る方向で助言する。字数の下限に届いていない・上限を超えている場合は総評の最初に書く。
+- 大学によって、得点化する・合否判定の参考にする・入学後の参考資料にとどめる、と扱いが違う。扱いが設問や補足に書かれていなければ決めつけない。`;
+// t: 書類の種類。null は Gem 用（全種類まとめて）
+const RULES = (aspectsText, rewriteRule, questionRule, t) => `# 守ること
 - 本文に書かれた事実を超えて、経験・実績・数値・固有名詞を作らない。足りない情報は、書き直し例の中で【 】の空欄として示す（例:【参加人数】【研究室名】）。
-- アドミッション・ポリシーが示されていれば、観点の中で必ずそれとの対応に触れる。示されていなければ、学部の一般的な特色からの見立てであることを断る。
+${t === "shutai" ? SHUTAI_RULES : AP_RULE + (t === null ? `\n- 種類が「主体性の記入欄」（一般選抜などの出願時に出願サイトへ入力する短い文章）のときは、すぐ上のアドミッション・ポリシーの決まりの代わりに、次の4つを守る。\n${SHUTAI_RULES.replace(/^- /gm, "  - ")}` : "")}
 - 「充実した環境」「幅広い視野」「真面目で明るい」のような、どの大学・どの生徒にも言える常套句は指摘する。
 - 書き直し例は字数の目安に収める（指定がなければ原文と同程度）。${rewriteRule}
 - 生徒への質問は、書き足すための材料を引き出す問いにする（はい・いいえで終わらない）。${questionRule}4〜6個。
@@ -257,7 +275,7 @@ A〜D の1文字と、2〜4文の総評。
 ## 観点別の評価
 「観点｜評価｜コメント」の表。
 ## 赤ペン
-本文の前から順に6〜12か所。各項目は次の形:
+本文の前から順に${t === "shutai" ? "本文の長さに応じて3〜8か所" : t === null ? "6〜12か所（主体性の記入欄は本文の長さに応じて3〜8か所）" : "6〜12か所"}。各項目は次の形:
 1. 「本文からそのまま引用（8〜40字）」［内容／構成／表現／誤字／事実確認］
    指摘：…
    直し方の例：…（不要なら省く）
@@ -272,7 +290,8 @@ const questionRuleOf = (t) => t === "suisen" ? "推薦書の場合は、推薦�
 function collect() {
   const toks = nameTokens($("names").value);
   const body = mask($("body").value.trim(), toks), ref = mask($("ref").value.trim(), toks), prev = mask($("prev").value.trim(), toks);
-  return { toks, body, ref, prev, target: getTarget(), ap: getAPText(), method: $("method").value, limit: Number($("limit").value) || 0, notes: $("notes").value.trim() };
+  const setsumon = mask($("setsumon").value.trim(), toks);
+  return { toks, body, ref, prev, setsumon, target: getTarget(), ap: getAPText(), method: $("method").value, limit: Number($("limit").value) || 0, notes: $("notes").value.trim() };
 }
 function dataBlock(c) {
   const T = TYPES[type];
@@ -283,7 +302,7 @@ function dataBlock(c) {
 - 字数の目安: ${c.limit ? c.limit + "字以内" : "指定なし"}（現在 ${countChars(c.body.text)}字、改行を除く）
 - 大学の求める人物像（アドミッション・ポリシー）:
 ${c.ap || "（未記入）"}
-- 先生からの補足: ${c.notes || "（なし）"}
+- 先生からの補足: ${c.notes || "（なし）"}${type === "shutai" ? `\n- 大学の設問（出願サイトの指示文）: ${c.setsumon.text || "（未記入。一般的な設問「主体性を持って多様な人々と協働して学ぶ態度について、これまでの経験を書く」として見る）"}` : ""}
 ${type === "suisen" && c.ref.text ? `\n# 参考：本人の志望理由書\n<<<\n${c.ref.text}\n>>>\n` : ""}${c.prev.text ? `\n# 前回の原稿\n<<<\n${c.prev.text}\n>>>\n` : ""}
 # 本文（生徒名は「〇〇」に伏せてあります）
 <<<
@@ -292,18 +311,18 @@ ${c.body.text}
 }
 function fullPrompt(c) {
   const T = TYPES[type];
-  return `あなたは高校で長年、大学入試の出願書類（総合型選抜・学校推薦型選抜）を指導してきた進路指導の教員です。以下の${T.label}を添削してください。読み手は添削を依頼した高校教員で、結果をもとに${type === "suisen" ? "自分の書いた推薦書を直します" : "生徒への返し方を決めます"}。
+  return `あなたは高校で長年、大学入試の出願書類（総合型選抜・学校推薦型選抜、および一般選抜の出願時に書く記入欄）を指導してきた進路指導の教員です。以下の${T.label}を添削してください。読み手は添削を依頼した高校教員で、結果をもとに${type === "suisen" ? "自分の書いた推薦書を直します" : "生徒への返し方を決めます"}。
 
 ${dataBlock(c)}
 
-${RULES(aspectsOf(type), T.rewriteRule, questionRuleOf(type))}`;
+${RULES(aspectsOf(type), T.rewriteRule, questionRuleOf(type), type)}`;
 }
 function gemRules() {
   const aspectsAll = Object.entries(TYPES).map(([k, T]) => `【${T.label}】\n${aspectsOf(k)}`).join("\n\n");
   const rw = Object.values(TYPES).map((T) => `${T.label}: ${T.rewriteRule}`).join(" ");
-  return `あなたは高校で長年、大学入試の出願書類（総合型選抜・学校推薦型選抜）を指導してきた進路指導の教員です。これから高校教員が、志望理由書・活動報告書・推薦書のどれかを「書類の情報」と「本文」の形で貼ります。書類の種類に合った観点で添削してください。読み手は依頼した高校教員です。
+  return `あなたは高校で長年、大学入試の出願書類（総合型選抜・学校推薦型選抜、および一般選抜の出願時に書く記入欄）を指導してきた進路指導の教員です。これから高校教員が、志望理由書・活動報告書・推薦書・主体性の記入欄のどれかを「書類の情報」と「本文」の形で貼ります。書類の種類に合った観点で添削してください。読み手は依頼した高校教員です。
 
-${RULES(`書類の種類ごとに、次の観点をこの順で A〜D で評価する。\n\n${aspectsAll}`, `文体の決まり: ${rw}`, "推薦書の場合は推薦者が生徒本人・部活動顧問・担任などに確かめるとよい問いに、それ以外は生徒に面談で聞く言葉づかいにする。")}`;
+${RULES(`書類の種類ごとに、次の観点をこの順で A〜D で評価する。\n\n${aspectsAll}`, `文体の決まり: ${rw}`, "推薦書の場合は推薦者が生徒本人・部活動顧問・担任などに確かめるとよい問いに、それ以外は生徒に面談で聞く言葉づかいにする。", null)}`;
 }
 
 function refresh() {
@@ -313,12 +332,12 @@ function refresh() {
   $("limitNote").textContent = lim ? `目安 ${lim}字以内` : "";
   if (!c.toks.length) $("maskNote").textContent = "名前を入れると、本文中の該当箇所を〇〇にしてから依頼文に入れます。";
   else {
-    const a = c.body.n + c.ref.n + c.prev.n;
+    const a = c.body.n + c.ref.n + c.prev.n + c.setsumon.n;
     $("maskNote").innerHTML = a ? `本文中の <b>${a}か所</b> を〇〇に伏せます。` : "本文中にこの名前は見つかりません。書き方の違いがないか確かめてください。";
   }
   $("preview").textContent = c.body.text ? fullPrompt(c) : "（本文を入れると、ここに依頼文が出ます）";
 }
-for (const id of ["body", "limit", "names", "ref", "prev", "notes", "target", "ap", "method"]) $(id).addEventListener("input", refresh);
+for (const id of ["body", "limit", "names", "ref", "prev", "notes", "target", "ap", "method", "setsumon"]) $(id).addEventListener("input", refresh);
 
 function say(msg, err) { $("status").textContent = msg || ""; $("status").className = "status" + (err ? " err" : " ok"); }
 async function copyText(text) {
@@ -354,8 +373,8 @@ $("gemDataBtn").addEventListener("click", async () => {
 });
 
 $("clearBtn").addEventListener("click", () => {
-  for (const id of ["uni", "target", "ap", "names", "body", "limit", "notes", "ref", "prev"]) $(id).value = "";
-  $("method").selectedIndex = 0;
+  for (const id of ["uni", "target", "ap", "names", "body", "limit", "notes", "ref", "prev", "setsumon"]) $(id).value = "";
+  $("method").value = type === "shutai" ? "一般選抜" : $("method").options[0].value;
   if (manual && AP) setManual(false);
   fillFac(); say(""); $("body").focus();
 });

@@ -3,7 +3,7 @@
   --ground:#F3F5F4; --paper:#FFFFFF; --ink:#1D2530; --ink-2:#4A5563; --ink-3:#7A8491;
   --line:#DCE1E0; --rule:#E6ECEA; --accent:#2B4C6F; --accent-ink:#FFFFFF; --accent-soft:#E4EBF2;
   --red:#C8322A; --red-soft:#FBE9E7;
-  --g-a:#2F7A55; --g-b:#4F7AA8; --g-c:#B7791F; --g-d:#A8423A;
+  --g-a:#2F7A55; --g-b:#4F7AA8; --g-c:#B7791F; --g-d:#A8423A; --ok-soft:#E6F2EB;
   --shadow:0 1px 2px rgba(29,37,48,.06),0 6px 24px rgba(29,37,48,.06);
   --mincho:"Zen Old Mincho","Hiragino Mincho ProN","Yu Mincho",serif;
   --gothic:"Zen Kaku Gothic New","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
@@ -15,7 +15,7 @@
     --ground:#14191F; --paper:#1C232B; --ink:#E6EAEE; --ink-2:#B3BCC6; --ink-3:#8793A0;
     --line:#2E3842; --rule:#26303A; --accent:#8FB3D9; --accent-ink:#10161C; --accent-soft:#223244;
     --red:#F07A6E; --red-soft:#3A2224;
-    --g-a:#6CC49A; --g-b:#8FB3D9; --g-c:#E3B25B; --g-d:#EE8A7F;
+    --g-a:#6CC49A; --g-b:#8FB3D9; --g-c:#E3B25B; --g-d:#EE8A7F; --ok-soft:#1F3328;
     --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 24px rgba(0,0,0,.25);
   }
 }
@@ -24,7 +24,7 @@
   --ground:#14191F; --paper:#1C232B; --ink:#E6EAEE; --ink-2:#B3BCC6; --ink-3:#8793A0;
   --line:#2E3842; --rule:#26303A; --accent:#8FB3D9; --accent-ink:#10161C; --accent-soft:#223244;
   --red:#F07A6E; --red-soft:#3A2224;
-  --g-a:#6CC49A; --g-b:#8FB3D9; --g-c:#E3B25B; --g-d:#EE8A7F;
+  --g-a:#6CC49A; --g-b:#8FB3D9; --g-c:#E3B25B; --g-d:#EE8A7F; --ok-soft:#1F3328;
   --shadow:0 1px 2px rgba(0,0,0,.3),0 6px 24px rgba(0,0,0,.25);
 }
 *{box-sizing:border-box}
@@ -36,13 +36,13 @@ h1 .pen{color:var(--red)}
 .sub{color:var(--ink-3);font-size:13px;margin:4px 0 0}
 .top-actions{display:flex;gap:8px}
 .grid{display:grid;grid-template-columns:minmax(0,5fr) minmax(0,7fr);gap:20px;align-items:start}
-@media (max-width:900px){.grid{grid-template-columns:1fr}}
+@media (max-width:900px){.grid{grid-template-columns:minmax(0,1fr)}}
 .panel{background:var(--paper);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow)}
 .panel-h{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line)}
 .panel-h h2{font-size:14px;font-weight:700;margin:0;letter-spacing:.08em}
 .panel-b{padding:16px;display:flex;flex-direction:column;gap:14px}
-.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line);border-radius:8px;overflow:hidden}
-.seg button{border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:14px;padding:9px 4px;cursor:pointer;border-right:1px solid var(--line)}
+.seg{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:transparent;color:var(--ink-2);font:inherit;font-size:13.5px;padding:9px 2px;cursor:pointer;border-right:1px solid var(--line)}
 .seg button:last-child{border-right:0}
 .seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink);font-weight:700}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
@@ -160,6 +160,6 @@ sup.rn{font-family:var(--mono);font-size:10.5px;color:var(--red);font-weight:500
 .trail .arr{color:var(--ink-3);font-size:11px}
 .hgroup ul{padding-bottom:6px}
 .hgroup li{padding-left:38px}
-.progress-note{margin:8px 0 0;font-size:13.5px;color:var(--g-a);background:color-mix(in srgb,var(--g-a) 10%,transparent);border-radius:6px;padding:6px 10px}
+.progress-note{margin:8px 0 0;font-size:13.5px;color:var(--g-a);background:var(--ok-soft);border-radius:6px;padding:6px 10px}
 .progress-note b{font-weight:700}
 .hist-empty{padding:14px 16px;font-size:13px;color:var(--ink-3)}
